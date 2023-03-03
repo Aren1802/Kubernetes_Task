@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: demo-data
+  namespace: kubedemo
+spec:
+  schedule: "* * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          initContainers:
+          - name: box-in
+            image: alpine
+            imagePullPolicy: IfNotPresent
+            command: ["/bin/sh", "-c"]
+            args:
+             - df -T -h > outbox.txt && mv outbox.txt /output;
+            volumeMounts:
+            - name: box-volume
+              mountPath: "/output"
+          containers:
+          - name: box-out
+            image: alpine
+            imagePullPolicy: IfNotPresent
+            command: ["/bin/sh", "-c"]
+            args:
+             - cd output/ && cat outbox.txt;
+            volumeMounts:
+            - name: box-volume
+              mountPath: "/output"
+          volumes:
+          - name: box-volume
+            emptyDir: {}
+          restartPolicy: OnFailure
